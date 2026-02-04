@@ -1,0 +1,1624 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#000000">  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>PRI-BIT Encryption</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0b0b;
+      --fg: #f5f5f5;
+      --muted: #bfbfbf;
+      --accent: #ffffff;
+      --error: #ff6b6b;
+      --success: #8be38b;
+      --border: #2a2a2a;
+      --shadow: 0 0 0 2px #1a1a1a;
+      font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, Monaco, monospace;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      display: flex;
+      min-height: 100vh;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    main {
+      width: min(960px, 96vw);
+      margin: 32px auto 48px;
+      border: 1px solid var(--border);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.04), transparent 24%),
+                  radial-gradient(circle at 80% 0%, rgba(255,255,255,0.03), transparent 20%),
+                  var(--bg);
+    }
+    h1, h2, h3 {
+      margin: 0 0 12px;
+      letter-spacing: 0.03em;
+    }
+    h1 { font-size: 26px; }
+    h2 { font-size: 18px; }
+    p { line-height: 1.6; color: var(--muted); }
+    section {
+      border: 1px solid var(--border);
+      padding: 16px;
+      margin-top: 16px;
+    }
+    label {
+      display: block;
+      margin: 12px 0 6px;
+      color: var(--fg);
+    }
+    input, textarea, select, button {
+      width: 100%;
+      background: #0f0f0f;
+      color: var(--fg);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 14px;
+      border-radius: 2px;
+      outline: none;
+      transition: border 0.15s ease, box-shadow 0.15s ease;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    textarea {
+      min-height: 140px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+    button {
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      background: #111;
+      border: 1px solid var(--fg);
+      margin-top: 12px;
+    }
+    .compact-btn {
+      width: auto;
+      min-width: 180px;
+      padding-left: 18px;
+      padding-right: 18px;
+    }
+    button:hover { background: #161616; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .button-like {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      background: #111;
+      color: var(--fg);
+      border: 1px solid var(--fg);
+      padding: 10px 12px;
+      border-radius: 2px;
+      transition: border 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .button-like.compact-btn {
+      width: auto;
+      min-width: 180px;
+      padding-left: 18px;
+      padding-right: 18px;
+    }
+    .button-like:hover { background: #161616; }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .muted { color: var(--muted); font-size: 13px; }
+    .inline { display: flex; gap: 8px; align-items: center; }
+    .wallet-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      width: 100%;
+    }
+    .wallet-actions #usage-count {
+      margin-left: auto;
+    }
+    .inline input[type="number"] { width: 120px; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      background: #0f0f0f;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      margin-right: 6px;
+    }
+    .danger { color: var(--error); }
+    .success { color: var(--success); }
+    .panel {
+      border: 1px dashed var(--border);
+      padding: 12px;
+      margin-top: 12px;
+    }
+    .image-preview {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .image-preview img {
+      max-width: 220px;
+      max-height: 220px;
+      border: 1px solid var(--border);
+      padding: 4px;
+      background: #000;
+      object-fit: contain;
+    }
+    #decrypted-attachment {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #download-image {
+      align-self: stretch;
+      width: 100%;
+      max-width: 100%;
+    }
+    .pill.muted {
+      color: var(--muted);
+    }
+    .output {
+      background: #050505;
+      border: 1px solid var(--border);
+      padding: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 80px;
+    }
+    .divider {
+      border-top: 1px solid var(--border);
+      margin: 14px 0;
+    }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+    .pill {
+      padding: 6px 10px;
+      background: #101010;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+    }
+    .hero {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      justify-content: flex-start;
+      flex-wrap: wrap;
+    }
+    .hero-logo {
+      width: 96px;
+      flex: 0 0 auto;
+      filter: drop-shadow(0 0 14px rgba(255,255,255,0.16));
+      opacity: 0.9;
+    }
+    .hero-text {
+      flex: 1 1 260px;
+      min-width: 260px;
+    }
+    .hero-visual {
+      margin-top: 14px;
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      align-self: center;
+    }
+    .hero-visual img {
+      width: min(100%, 640px);
+      height: auto;
+      max-width: 100%;
+      filter: drop-shadow(0 0 18px rgba(255,255,255,0.22));
+      opacity: 0.88;
+      object-fit: contain;
+    }
+    footer { margin-top: 18px; font-size: 12px; color: var(--muted); }
+    .menu-toggle {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      width: 44px;
+      height: 44px;
+      background: #111;
+      border: 1px solid var(--fg);
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      z-index: 20;
+      transition: border 0.15s ease, background 0.15s ease, transform 0.15s ease;
+    }
+    .menu-toggle:hover { background: #151515; transform: translateY(-1px); }
+    .menu-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .menu-toggle span {
+      display: block;
+      width: 18px;
+      height: 2px;
+      background: var(--fg);
+      border-radius: 1px;
+    }
+    .menu-panel {
+      position: fixed;
+      top: 70px;
+      right: 18px;
+      width: min(320px, 86vw);
+      background: #0f0f0f;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-6px);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      z-index: 19;
+    }
+    .menu-panel.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+    .menu-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      color: var(--fg);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      background: #121212;
+      border-radius: 4px;
+      transition: border 0.15s ease, background 0.15s ease;
+    }
+    .menu-link:hover { border-color: var(--accent); background: #161616; }
+    .menu-link small { color: var(--muted); }
+    .menu-link select {
+      width: auto;
+      min-width: 140px;
+      margin-left: auto;
+      background: #0f0f0f;
+    }
+    .menu-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+    .menu-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(2px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      z-index: 18;
+    }
+    .menu-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .terms-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .terms-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .terms-modal {
+      width: min(560px, 92vw);
+      background: #0f0f0f;
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .terms-scroll {
+      max-height: 240px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      padding: 10px;
+      background: #0b0b0b;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .terms-link {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .terms-link:hover { text-decoration: underline; }
+    .terms-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .terms-actions label {
+      margin: 0;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 13px;
+    }
+    .terms-actions input[type="checkbox"] {
+      width: auto;
+    }
+    .muted-link {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .muted-link:hover { text-decoration: underline; }
+    @media (max-width: 640px) {
+      main { padding: 16px; margin: 16px auto 32px; }
+      button { font-size: 13px; }
+      .menu-toggle { width: 40px; height: 40px; top: 12px; right: 12px; }
+      .menu-panel { top: 60px; right: 12px; }
+      .hero { align-items: center; }
+      .hero-logo { width: 76px; }
+      .hero-visual { margin-top: 10px; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="terms-overlay" class="terms-overlay" aria-hidden="true">
+    <div class="terms-modal" role="dialog" aria-modal="true" aria-labelledby="terms-title">
+      <h2 id="terms-title">
+        <a id="terms-link" class="terms-link" href="https://pri-bit.kesug.com/terms.txt" target="_blank" rel="noopener noreferrer" data-i18n="termsTitle">Terms of Service</a>
+      </h2>
+      <div class="terms-scroll" id="terms-scroll">
+        <p data-i18n="termsLine1">By using this service, you agree to the Terms of Service and acknowledge that encryption is performed locally on your device.</p>
+        <p data-i18n="termsLine2">You are solely responsible for any use or misuse of this service and for sharing secrets securely.</p>
+        <p data-i18n="termsLine3">Do not use this service for illegal or abusive activities. Usage may be restricted if abuse is detected.</p>
+      </div>
+      <div class="terms-actions">
+        <label>
+          <input id="terms-checkbox" type="checkbox">
+          <span data-i18n="termsAgree">I agree to the Terms of Service</span>
+        </label>
+        <span class="muted" id="terms-hint" data-i18n="termsScrollHint">Scroll to the bottom to enable the checkbox.</span>
+        <a id="terms-hint-link" class="terms-link" href="https://pri-bit.kesug.com/terms.txt" target="_blank" rel="noopener noreferrer" data-i18n="termsLinkLabel">View terms</a>
+        <button id="terms-accept-btn" class="compact-btn" disabled data-i18n="termsAcceptBtn">Continue</button>
+      </div>
+    </div>
+  </div>
+  <div id="menu-overlay" class="menu-overlay" aria-hidden="true"></div>
+  <button id="menu-toggle" class="menu-toggle" aria-label="Open menu" aria-expanded="false" data-i18n-label="menuToggleLabel">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+  <div id="menu-panel" class="menu-panel" role="menu" aria-hidden="true">
+    <a class="menu-link" href="https://pri-bit.kesug.com/terms.txt" target="_blank" rel="noopener noreferrer" role="menuitem">
+      <span data-i18n="menuTerms">Terms of policy</span>
+      <small data-i18n="menuTermsNote">Opens in new tab</small>
+    </a>
+    <a class="menu-link" href="https://x.com/pribitmails" target="_blank" rel="noopener noreferrer" role="menuitem">
+      <span class="menu-link-label" data-i18n="menuXLabel">Official X account</span>
+      <span class="menu-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.803-7.584-6.637 7.584H.47l8.6-9.83L0 1.154h7.594l5.243 6.932z"/>
+        </svg>
+      </span>
+    </a>
+    <div class="menu-link" role="menuitem">
+      <div style="display:flex; flex-direction:column; gap:4px;">
+        <span data-i18n="languageLabel">Language</span>
+        <small data-i18n="languageHint">Choose language.</small>
+      </div>
+      <select id="language-select" data-i18n-label="languageLabel" aria-label="Language">
+        <option value="en">English</option>
+        <option value="ko">한국어</option>
+      </select>
+    </div>
+  </div>
+  <main>
+    <header class="hero">
+      <img src="logo-outline.png" alt="Pri-Bit outline logo" class="hero-logo">
+      <div class="hero-text">
+        <h1 data-i18n="title">Pri-Bit — Private Encryption service</h1>
+        <p data-i18n="tagline">Serverless, local-only encryption. No accounts.</p>
+        <div class="inline"></div>
+      </div>
+      <div class="hero-visual">
+        <img src="logo1.png" alt="Pri-Bit signature">
+      </div>
+    </header>
+
+    <section id="composer">
+      <h2 data-i18n="composeHeading">Compose & Encrypt</h2>
+      <div class="panel" id="wallet-panel">
+        <div class="row">
+          <div>
+            <div class="wallet-actions">
+              <button id="connect-wallet-btn" class="compact-btn" data-i18n="connectWalletBtn">Connect wallet</button>
+              <span class="pill muted" id="usage-count" data-i18n="sentCountLabel">Sent so far: 0</span>
+            </div>
+            <div class="muted" id="wallet-address"></div>
+          </div>
+        </div>
+      </div>
+      <form id="compose-form" autocomplete="off" novalidate>
+        <div class="row">
+          <div>
+            <label for="secret" data-i18n="secretLabel">Shared secret</label>
+            <input id="secret" name="secret" type="password" placeholder="Enter shared secret" required data-i18n-placeholder="secretPlaceholder">
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="expiry" data-i18n="expiryLabel">Expires after</label>
+            <select id="expiry" name="expiry">
+              <option value="10m" data-i18n="expiry10m">10 minutes</option>
+              <option value="1h" data-i18n="expiry1h" selected>1 hour</option>
+              <option value="24h" data-i18n="expiry24h">24 hours</option>
+              <option value="7d" data-i18n="expiry7d">7 days</option>
+              <option value="permanent" data-i18n="expiryPermanent">Permanent (no expiry)</option>
+              <option value="custom" data-i18n="expiryCustom">Custom (minutes)</option>
+            </select>
+            <div class="inline" id="custom-expiry-row" style="margin-top:6px; display:none;">
+              <input id="custom-minutes" type="number" min="1" max="10080" value="60">
+              <span class="muted" data-i18n="customMinutesSuffix">minutes</span>
+            </div>
+          </div>
+          <div>
+            <label data-i18n="messageLengthLabel">Message length</label>
+            <div class="pill"><span id="char-count">0</span>/2000 chars</div>
+          </div>
+        </div>
+        <label for="message" data-i18n="messageLabel">Message (max 2000 chars)</label>
+        <textarea id="message" name="message" maxlength="2000" placeholder="Type your message. English characters only are counted toward the 2000-character cap." data-i18n-placeholder="messagePlaceholder"></textarea>
+        <div class="muted" data-i18n="tip">Tip: share the secret via a different channel.</div>
+        <label for="image-input" data-i18n="imageLabel">Attach file (optional)</label>
+        <input id="image-input" type="file" accept="*/*">
+        <div class="muted" data-i18n="imageHint">Any file type up to 10 MB. Stored offline only.</div>
+        <div id="image-preview-wrapper" class="panel" hidden>
+          <div class="image-preview">
+            <img id="image-preview" alt="Selected attachment preview">
+            <div>
+              <div class="pill muted" id="image-meta-name"></div>
+              <div class="pill muted" id="image-meta-size"></div>
+              <button type="button" class="compact-btn" id="clear-image-btn" data-i18n="imageClear">Remove file</button>
+            </div>
+          </div>
+        </div>
+        <button type="submit" id="encrypt-btn" data-i18n="encryptBtn">Encrypt & Prepare</button>
+        <div class="muted" id="send-warning"></div>
+      </form>
+
+      <div id="composer-result" class="panel" hidden>
+        <h3 data-i18n="resultHeading">Encrypted payload ready</h3>
+        <div class="muted" data-i18n="resultSub">Paste this into the message body.</div>
+        <textarea id="encrypted-block" readonly></textarea>
+        <div class="row">
+          <button id="copy-block" data-i18n="copyPayload">Copy payload</button>
+        </div>
+        <div class="muted" id="subject-suggestion" data-i18n="subjectSuggestion">Subject suggestion: [Pri-Bit encryption service]</div>
+      </div>
+    </section>
+
+    <section id="decryptor">
+      <h2 data-i18n="decryptHeading">Decrypt & View</h2>
+      <label for="encrypted-input" data-i18n="encryptedLabel">Paste encrypted block</label>
+      <textarea id="encrypted-input" placeholder="-----BEGIN PRI-BIT----- ... -----END PRI-BIT-----" data-i18n-placeholder="encryptedPlaceholder"></textarea>
+      <label for="decrypt-secret" data-i18n="decryptSecretLabel">Shared secret</label>
+      <input id="decrypt-secret" type="password" placeholder="Enter shared secret" data-i18n-placeholder="decryptSecretPlaceholder">
+      <button id="decrypt-btn" data-i18n="decryptBtn">Decrypt</button>
+      <div id="decrypt-output" class="panel" hidden>
+        <div id="decrypt-status" class="muted"></div>
+        <div class="divider"></div>
+        <div id="decrypted-message" class="output"></div>
+        <div id="decrypted-attachment" class="panel" hidden>
+          <div class="muted" data-i18n="attachmentHeading">Image attachment</div>
+          <div class="image-preview" id="decrypted-attachment-preview" hidden>
+            <img id="decrypted-image" alt="Decrypted attachment">
+          </div>
+          <a id="download-image" class="button-like compact-btn" href="#" download hidden data-i18n="downloadImage">Download image</a>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p data-i18n="footer1">Pri-Bit stores nothing on servers. Usage and limits live in your local storage only.</p>
+      <p data-i18n="footer2">Consequences following due to abusive usage of this program solely belongs to the user alone.</p>
+      <p data-i18n="footer3">By using this website, you fully understand the terms of service and agree to act following it.</p>
+      <p class="muted" data-i18n="footer4">Need quick access? Use the menu at the top-right for our terms of policy and X account.</p>
+    </footer>
+  </main>
+
+  <script>
+    (() => {
+      const LANG_KEY = 'pri_bit_lang';
+      const TERMS_KEY = 'pri_bit_terms_accepted';
+      let currentLang = 'en';
+      const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
+      let PAY_THRESHOLD = 10;
+      const FORCE_PAID = true;
+      let PAY_AMOUNT_USDC = '0.1';
+      const USDC_DECIMALS = 6;
+      let USDC_CONTRACT = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
+      let PAY_TARGET = '0x53e40a038f345A9dA10D4F993A541b1E696A947b';
+      let POLYGON_CHAIN_ID = '0x89';
+      let POLYGON_NAME = 'Polygon Mainnet';
+      let walletConnected = false;
+      let selectedFile = null;
+      let decryptedObjectUrl = null;
+      let expiryTimer = null;
+      let expiryAt = null;
+      let expiryInterval = null;
+      const usageKey = () => {
+        const now = new Date();
+        return `pri_bit_usage_${now.getUTCFullYear()}_${now.getUTCMonth() + 1}`;
+      };
+
+      const parseEnvValue = (text, key) => {
+        const match = text.match(new RegExp(`^\\s*${key}\\s*=\\s*([^#\\n]+)`, 'mi'));
+        if (!match) return null;
+        return match[1].trim().replace(/^['"]|['"]$/g, '');
+      };
+
+      const normalizeChainId = (value) => {
+        if (!value) return null;
+        const v = value.trim();
+        if (/^0x[0-9a-f]+$/i.test(v)) return v;
+        if (/^\\d+$/i.test(v)) {
+          return `0x${Number(v).toString(16)}`;
+        }
+        return v;
+      };
+
+      async function loadEnv() {
+        try {
+          if (window.location.protocol === 'file:') {
+            console.warn('env load skipped (file protocol)');
+            return;
+          }
+          const res = await fetch('.env', { cache: 'no-store' });
+          if (!res.ok) return;
+          const text = await res.text();
+          const threshold = parseEnvValue(text, 'PRI_BIT_PAY_THRESHOLD');
+          const amount = parseEnvValue(text, 'PRI_BIT_PAY_AMOUNT_USDC');
+          const usdc = parseEnvValue(text, 'PRI_BIT_USDC_CONTRACT');
+          const target = parseEnvValue(text, 'PRI_BIT_PAY_TARGET');
+          const chainId = normalizeChainId(parseEnvValue(text, 'PRI_BIT_CHAIN_ID'));
+          const chainName = parseEnvValue(text, 'PRI_BIT_CHAIN_NAME');
+          if (threshold && Number.isFinite(Number(threshold))) {
+            PAY_THRESHOLD = Math.max(0, Math.floor(Number(threshold)));
+          }
+          if (amount) PAY_AMOUNT_USDC = amount;
+          if (usdc) USDC_CONTRACT = usdc;
+          if (target) PAY_TARGET = target;
+          if (chainId) POLYGON_CHAIN_ID = chainId;
+          if (chainName) POLYGON_NAME = chainName;
+        } catch (err) {
+          console.warn('env load skipped', err);
+        } finally {
+          updateLimitDisplay();
+        }
+      }
+
+      const $ = (id) => document.getElementById(id);
+      const enc = new TextEncoder();
+      const dec = new TextDecoder();
+
+      const menuToggle = $('menu-toggle');
+      const menuPanel = $('menu-panel');
+      const menuOverlay = $('menu-overlay');
+      const termsOverlay = $('terms-overlay');
+      const termsCheckbox = $('terms-checkbox');
+      const termsAcceptBtn = $('terms-accept-btn');
+      const termsScroll = $('terms-scroll');
+      const termsHint = $('terms-hint');
+
+      const closeMenu = () => {
+        menuPanel.classList.remove('open');
+        menuOverlay.classList.remove('active');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        menuPanel.setAttribute('aria-hidden', 'true');
+        menuOverlay.setAttribute('aria-hidden', 'true');
+      };
+
+      const openMenu = () => {
+        menuPanel.classList.add('open');
+        menuOverlay.classList.add('active');
+        menuToggle.setAttribute('aria-expanded', 'true');
+        menuPanel.setAttribute('aria-hidden', 'false');
+        menuOverlay.setAttribute('aria-hidden', 'false');
+      };
+
+      menuToggle.addEventListener('click', () => {
+        const isOpen = menuPanel.classList.contains('open');
+        isOpen ? closeMenu() : openMenu();
+      });
+
+      menuOverlay.addEventListener('click', closeMenu);
+      menuPanel.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', closeMenu);
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          closeMenu();
+        }
+      });
+
+      function setTermsGate(enabled) {
+        const encryptBtn = $('encrypt-btn');
+        const decryptBtn = $('decrypt-btn');
+        const composeForm = $('compose-form');
+        const decryptInput = $('encrypted-input');
+        const decryptSecret = $('decrypt-secret');
+        const secretInput = $('secret');
+        const messageInput = $('message');
+        const imageInput = $('image-input');
+        if (encryptBtn) encryptBtn.disabled = !enabled;
+        if (decryptBtn) decryptBtn.disabled = !enabled;
+        if (composeForm) composeForm.style.pointerEvents = enabled ? 'auto' : 'none';
+        if (decryptInput) decryptInput.disabled = !enabled;
+        if (decryptSecret) decryptSecret.disabled = !enabled;
+        if (secretInput) secretInput.disabled = !enabled;
+        if (messageInput) messageInput.disabled = !enabled;
+        if (imageInput) imageInput.disabled = !enabled;
+      }
+
+      function updateTermsCheckboxLock() {
+        if (!termsScroll || !termsCheckbox || !termsAcceptBtn) return;
+        const atBottom = termsScroll.scrollTop + termsScroll.clientHeight >= termsScroll.scrollHeight - 2;
+        termsCheckbox.disabled = !atBottom;
+        if (atBottom) {
+          termsCheckbox.disabled = false;
+          termsAcceptBtn.disabled = !termsCheckbox.checked;
+          if (termsHint) termsHint.textContent = t('termsScrollReady');
+        } else {
+          termsCheckbox.checked = false;
+          termsAcceptBtn.disabled = true;
+          if (termsHint) termsHint.textContent = t('termsScrollHint');
+        }
+      }
+
+      let termsPopstateHandler = null;
+
+      function enableTermsLock() {
+        if (termsPopstateHandler) return;
+        try {
+          history.pushState({ terms: 'lock' }, document.title, location.href);
+        } catch {
+          // ignore history failures
+        }
+        termsPopstateHandler = () => {
+          if (!hasAcceptedTerms()) {
+            try {
+              history.pushState({ terms: 'lock' }, document.title, location.href);
+            } catch {
+              // ignore history failures
+            }
+            openTerms();
+          }
+        };
+        window.addEventListener('popstate', termsPopstateHandler);
+      }
+
+      function disableTermsLock() {
+        if (!termsPopstateHandler) return;
+        window.removeEventListener('popstate', termsPopstateHandler);
+        termsPopstateHandler = null;
+      }
+
+      function openTerms() {
+        if (!termsOverlay) return;
+        termsOverlay.classList.add('active');
+        termsOverlay.setAttribute('aria-hidden', 'false');
+        setTermsGate(false);
+        if (termsScroll) termsScroll.scrollTop = 0;
+        if (termsCheckbox) {
+          termsCheckbox.checked = false;
+          termsCheckbox.disabled = true;
+        }
+        if (termsAcceptBtn) termsAcceptBtn.disabled = true;
+        updateTermsCheckboxLock();
+        enableTermsLock();
+      }
+
+      function closeTerms() {
+        if (!termsOverlay) return;
+        termsOverlay.classList.remove('active');
+        termsOverlay.setAttribute('aria-hidden', 'true');
+        setTermsGate(true);
+        disableTermsLock();
+      }
+
+      function hasAcceptedTerms() {
+        try {
+          return localStorage.getItem(TERMS_KEY) === 'true';
+        } catch {
+          return false;
+        }
+      }
+
+      function acceptTerms() {
+        try {
+          localStorage.setItem(TERMS_KEY, 'true');
+        } catch {
+          // ignore storage failures
+        }
+        closeTerms();
+      }
+
+      const toB64 = (buf) => {
+        const arr = buf instanceof ArrayBuffer ? new Uint8Array(buf) : new Uint8Array(buf.buffer || buf);
+        let binary = '';
+        const chunk = 0x8000; // avoid call stack overflow on large payloads
+        for (let i = 0; i < arr.length; i += chunk) {
+          binary += String.fromCharCode(...arr.subarray(i, i + chunk));
+        }
+        return btoa(binary);
+      };
+      const fromB64 = (str) => {
+        const bin = atob(str);
+        const len = bin.length;
+        const arr = new Uint8Array(len);
+        for (let i = 0; i < len; i += 1) {
+          arr[i] = bin.charCodeAt(i);
+        }
+        return arr;
+      };
+      const formatBytes = (bytes) => {
+        if (!Number.isFinite(bytes)) return '';
+        if (bytes < 1024) return `${bytes} B`;
+        const units = ['KB', 'MB', 'GB'];
+        let size = bytes / 1024;
+        for (const unit of units) {
+          if (size < 1024) return `${size.toFixed(1)} ${unit}`;
+          size /= 1024;
+        }
+        return `${size.toFixed(1)} TB`;
+      };
+      const fileToBase64 = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result;
+          const base64 = typeof result === 'string' ? result.split(',')[1] : '';
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const base64ToBlob = (base64, mime) => {
+        const bin = atob(base64);
+        const len = bin.length;
+        const buf = new Uint8Array(len);
+        for (let i = 0; i < len; i += 1) buf[i] = bin.charCodeAt(i);
+        return new Blob([buf], { type: mime || 'application/octet-stream' });
+      };
+
+      function setWalletAddress(addr = '') {
+        const node = $('wallet-address');
+        if (!node) return;
+        node.textContent = addr;
+      }
+
+      function getEvmProvider() {
+        const eth = window.ethereum;
+        if (eth && Array.isArray(eth.providers) && eth.providers.length) {
+          const preferred = eth.providers.find((p) => p.isMetaMask || p.isPhantom || p.isUnstoppable);
+          return preferred || eth.providers[0];
+        }
+        if (window.phantom && window.phantom.ethereum) return window.phantom.ethereum;
+        if (eth) return eth;
+        return null;
+      }
+
+      async function ensurePolygonNetwork(provider) {
+        const net = await provider.getNetwork();
+        if (net.chainId === 137) return;
+        try {
+          await provider.send('wallet_switchEthereumChain', [{ chainId: POLYGON_CHAIN_ID }]);
+        } catch (err) {
+          if (err && err.code === 4902) {
+            await provider.send('wallet_addEthereumChain', [{
+              chainId: POLYGON_CHAIN_ID,
+              chainName: POLYGON_NAME,
+              nativeCurrency: { name: 'Polygon', symbol: 'POL', decimals: 18 },
+              rpcUrls: ['https://polygon-rpc.com'],
+              blockExplorerUrls: ['https://polygonscan.com']
+            }]);
+          } else {
+            throw err;
+          }
+        }
+      }
+
+      async function connectWallet() {
+        if (typeof ethers === 'undefined') {
+          throw new Error('no_wallet_lib');
+        }
+        const rawProvider = getEvmProvider();
+        if (!rawProvider) {
+          throw new Error('no_wallet');
+        }
+        const provider = new ethers.providers.Web3Provider(rawProvider, 'any');
+        await provider.send('eth_requestAccounts', []);
+        await ensurePolygonNetwork(provider);
+        const signer = provider.getSigner();
+        const addr = await signer.getAddress();
+        setWalletAddress(addr);
+        walletConnected = true;
+        updateWalletButton();
+        return signer;
+      }
+
+      async function initWalletStatus() {
+        try {
+          if (typeof ethers === 'undefined') {
+            updateWalletButton();
+            return;
+          }
+          const rawProvider = getEvmProvider();
+          if (!rawProvider) {
+            updateWalletButton();
+            return;
+          }
+          const provider = new ethers.providers.Web3Provider(rawProvider, 'any');
+          const accounts = await provider.send('eth_accounts', []);
+          if (!accounts || !accounts.length) {
+            updateWalletButton();
+            return;
+          }
+          walletConnected = true;
+          setWalletAddress(accounts[0]);
+          updateWalletButton();
+        } catch (err) {
+          console.warn('wallet status init failed', err);
+          updateWalletButton();
+        }
+      }
+
+      async function requestPayment() {
+        if (typeof ethers === 'undefined') {
+          setSendWarning(t('walletNeedInstall'), true);
+          throw new Error('no_wallet_lib');
+        }
+        const rawProvider = getEvmProvider();
+        if (!rawProvider) {
+          setSendWarning(t('walletNeedInstall'), true);
+          throw new Error('no_wallet');
+        }
+        const signer = await connectWallet();
+        const contract = new ethers.Contract(
+          USDC_CONTRACT,
+          ['function transfer(address to, uint256 value) public returns (bool)'],
+          signer
+        );
+        const amount = ethers.utils.parseUnits(PAY_AMOUNT_USDC, USDC_DECIMALS);
+        setSendWarning(t('paymentRequesting', PAY_AMOUNT_USDC));
+        const tx = await contract.transfer(PAY_TARGET, amount);
+        setSendWarning(t('paymentConfirming'));
+        await tx.wait();
+        setSendWarning(t('paymentSuccess'));
+      }
+      function clearSelectedFile() {
+        selectedFile = null;
+        $('image-preview-wrapper').hidden = true;
+        const input = $('image-input');
+        if (input) input.value = '';
+        const img = $('image-preview');
+        if (img) img.style.display = 'none';
+      }
+      function showFilePreview(info) {
+        if (!info) return;
+        const isImg = (info.type || '').startsWith('image/');
+        const img = $('image-preview');
+        if (img) {
+          if (isImg) {
+            img.src = info.dataUrl;
+            img.alt = info.name || 'Attachment preview';
+            img.style.display = 'block';
+          } else {
+            img.style.display = 'none';
+            img.src = '';
+          }
+        }
+        $('image-meta-name').textContent = info.name || '';
+        $('image-meta-size').textContent = formatBytes(info.size);
+        $('image-preview-wrapper').hidden = false;
+      }
+      async function handleFileSelection(file) {
+        if (!file) {
+          clearSelectedFile();
+          return;
+        }
+        if (file.size > MAX_FILE_BYTES) {
+          alert(t('alertImageTooLarge'));
+          clearSelectedFile();
+          return;
+        }
+        const base64 = await fileToBase64(file);
+        const mime = file.type || 'application/octet-stream';
+        const dataUrl = `data:${mime};base64,${base64}`;
+        selectedFile = {
+          name: file.name || 'attachment',
+          type: mime,
+          size: file.size,
+          base64,
+          dataUrl,
+        };
+        showFilePreview(selectedFile);
+      }
+      function clearDecryptedAttachment() {
+        if (decryptedObjectUrl) {
+          URL.revokeObjectURL(decryptedObjectUrl);
+          decryptedObjectUrl = null;
+        }
+        const img = $('decrypted-image');
+        if (img) {
+          img.src = '';
+          img.alt = '';
+        }
+        $('decrypted-attachment').hidden = true;
+        $('decrypted-attachment-preview').hidden = true;
+        $('download-image').hidden = true;
+      }
+
+      function clearExpiryTimer() {
+        if (expiryTimer) {
+          clearTimeout(expiryTimer);
+          expiryTimer = null;
+        }
+        if (expiryInterval) {
+          clearInterval(expiryInterval);
+          expiryInterval = null;
+        }
+        expiryAt = null;
+      }
+
+      function handleExpiry() {
+        if (!expiryAt) return;
+        if (Date.now() < expiryAt) return;
+        $('decrypted-message').textContent = t('expiredCleared');
+        clearDecryptedAttachment();
+        clearExpiryTimer();
+      }
+
+      function startExpiryWatcher(expMs) {
+        clearExpiryTimer();
+        if (!expMs || !Number.isFinite(expMs)) return;
+        expiryAt = expMs;
+        const msLeft = expMs - Date.now();
+        if (msLeft > 0) {
+          expiryTimer = setTimeout(handleExpiry, msLeft);
+          expiryInterval = setInterval(handleExpiry, 1000);
+        } else {
+          handleExpiry();
+        }
+      }
+      function renderDecryptedAttachment(attachment) {
+        clearDecryptedAttachment();
+        if (!attachment || !attachment.data) return;
+        try {
+          const blob = base64ToBlob(attachment.data, attachment.type);
+          decryptedObjectUrl = URL.createObjectURL(blob);
+          const isImg = (attachment.type || '').startsWith('image/');
+          const preview = $('decrypted-attachment-preview');
+          const img = $('decrypted-image');
+          if (isImg && img && preview) {
+            img.src = decryptedObjectUrl;
+            img.alt = attachment.name || 'Decrypted attachment';
+            preview.hidden = false;
+          } else if (preview) {
+            preview.hidden = true;
+          }
+          const dl = $('download-image');
+          dl.href = decryptedObjectUrl;
+          dl.download = attachment.name || 'attachment';
+          dl.hidden = false;
+          $('decrypted-attachment').hidden = false;
+        } catch (err) {
+          console.error('render attachment failed', err);
+        }
+      }
+
+      const translations = {
+        en: {
+          title: 'PRI-BIT Encryption',
+          tagline: 'Serverless, local-only encryption.',
+          pillSender: '',
+          menuTerms: 'Terms of policy',
+          menuTermsNote: 'Opens in new tab',
+          menuXLabel: 'Official X',
+          languageLabel: 'Language',
+          languageHint: 'Choose language.',
+          menuToggleLabel: 'Open menu',
+          termsTitle: 'Terms of Service',
+          termsLine1: 'By using this service, you agree to the Terms of Service.',
+          termsLine2: 'You are solely responsible for any use or misuse of this service and for sharing secrets securely.',
+          termsLine3: 'Do not use this service for illegal or abusive activities.',
+          termsAgree: 'I agree to the Terms of Service',
+          termsAcceptBtn: 'Continue',
+          termsScrollHint: 'Scroll to the bottom to enable the checkbox.',
+          termsScrollReady: '',
+          termsLinkLabel: 'View terms',
+          howHeading: 'How it works',
+          how1: 'Everything runs in your local device. Nothing is stored on any server.',
+          how2: 'Encryption uses AES-256-GCM with PBKDF2 key derivation.',
+          how3: 'Choose expiry; decrypted messages will refuse to open after that moment.',
+          how4: 'Send through your existing SNS / E-mail client (Gmail, Outlook, Instagram, etc.).',
+          how5: 'Set a shared secret out-of-band; only the recipient can decrypt.',
+          composeHeading: 'Compose & Encrypt',
+          recipientLabel: 'Recipient email',
+          recipientPlaceholder: 'recipient@example.com',
+          secretLabel: 'Shared secret',
+          secretPlaceholder: 'Enter shared secret',
+          expiryLabel: 'Expires after',
+          expiry10m: '10 minutes',
+          expiry1h: '1 hour',
+          expiry24h: '24 hours',
+          expiry7d: '7 days',
+          expiryCustom: 'Custom (minutes)',
+          expiryPermanent: 'Permanent (no expiry)',
+          customMinutesSuffix: 'minutes',
+          messageLengthLabel: 'Message length',
+          messageLabel: 'Message',
+          messagePlaceholder: 'Type your message. Characters are counted toward the 2000-character cap.',
+          tip: 'Tip: share the secret via a different channel.',
+          imageLabel: 'Attach file',
+          imageHint: '',
+          imageClear: 'Remove file',
+          encryptBtn: 'Encrypt',
+          resultHeading: 'Encrypted payload ready',
+          resultSub: '',
+          copyPayload: 'Copy payload',
+          copySuccess: 'Copied',
+          openMailto: 'Open email client',
+          subjectSuggestion: '',
+          decryptHeading: 'Decrypt & View',
+          encryptedLabel: 'Paste encrypted block',
+          encryptedPlaceholder: '-----BEGIN PRI-BIT----- ... -----END PRI-BIT-----',
+          decryptSecretLabel: 'Shared secret',
+          decryptSecretPlaceholder: 'Enter shared secret',
+          decryptBtn: 'Decrypt',
+          footer1: '',
+          footer2: 'Consequences following due to abusive usage of this program solely belongs to the user alone.',
+          footer3: 'By using this website, you fully understand the terms of service and agree to act following it.',
+          footer4: 'Use the menu at the top-right for our terms of policy.',
+          alertsMissingFields: 'Shared secret is required.',
+          alertTooLong: 'Message exceeds 2000 characters.',
+          alertNoContent: 'Enter a message or attach a file.',
+          alertImageTooLarge: 'file exceeds the 10 MB limit.',
+          alertCap: 'Monthly send cap reached.',
+          alertEncryptFail: 'Encryption failed. Please retry.',
+          alertClipboard: 'Clipboard access denied. Copy manually.',
+          alertDecryptMissing: 'Encrypted block and shared secret are required.',
+          paymentRequiredBanner: (amount) => ``,
+          paymentRequesting: (amount) => `Requesting ${amount} USDC payment...`,
+          paymentConfirming: 'Waiting for payment confirmation...',
+          paymentSuccess: 'Payment confirmed. You can continue.',
+          paymentFailed: 'Payment failed or rejected.',
+          walletNeedInstall: 'A Web3 wallet is required.',
+          connectWalletBtn: 'Connect wallet',
+          walletStatusIdle: 'Not connected.',
+          walletStatusConnected: 'Connected',
+          walletStatusSwitching: 'Switching to Polygon mainnet...',
+          walletStatusError: 'Wallet connection failed.',
+          statusValidUntil: (exp) => `Valid until: ${exp}`,
+          statusPermanent: 'Valid: permanent',
+          statusExpired: 'Message expired. Auto-deleted.',
+          statusDecryptFail: 'Failed to decrypt. Check secret or block.',
+          mailBodyHeader: 'Encrypted message generated by Pri-Bit.',
+          mailBodyStep1: 'To read:',
+          mailBodyStep2: '1) Open the Pri-Bit HTML file.',
+          mailBodyStep3: '2) Paste the block below into "Decrypt & View".',
+          mailBodyStep4: '3) Enter the shared secret.',
+          subjectLine: '[Pri-Bit encrypted mail system]',
+          expiryDisplayPermanent: 'Permanent',
+          expiredCleared: '[Expired — content cleared]',
+          noTextContent: '[No text content]',
+          attachmentHeading: '',
+          downloadImage: 'Download file',
+          sentCountLabel: (count) => `Sent so far: ${count}`,
+          sendWarning: '',
+          
+        },
+        ko: {
+          title: 'PRI-BIT 암호화 서비스',
+          tagline: '서버 없이 로컬에서만 동작합니다.',
+          pillSender: '',
+          menuTerms: '서비스 정책',
+          menuTermsNote: '새 탭에서 열림',
+          menuXLabel: '공식 X',
+          languageLabel: '언어',
+          languageHint: '언어를 선택하세요.',
+          menuToggleLabel: '메뉴 열기',
+          termsTitle: '이용약관',
+          termsLine1: '이 서비스를 사용함으로써 이용약관을 완전히 이해하고, 동의하는 것으로 간주합니다.',
+          termsLine2: '본 서비스의 사용 또는 오남용에 대한 책임은 전적으로 사용자에게 있으며 비밀키 공유도 사용자가 책임집니다.',
+          termsLine3: '불법적이거나 남용 목적의 사용을 금지합니다.',
+          termsAgree: '이용약관에 동의합니다',
+          termsAcceptBtn: '계속',
+          termsScrollHint: '끝까지 스크롤하면 체크가 활성화됩니다.',
+          termsScrollReady: '',
+          termsLinkLabel: '약관 보기',
+          howHeading: '사용 방법',
+          how1: '모든 처리가 기기 로컬에서 이루어집니다. 서버에 저장되지 않습니다.',
+          how2: 'AES-256-GCM과 PBKDF2 키 파생을 사용합니다.',
+          how3: '만료 시점을 설정하면 그 이후에는 복호화가 거부됩니다.',
+          how4: '기존 SNS / 이메일 클라이언트(지메일, 아웃룩, 인스타그램 등)로 전송하세요.',
+          how5: '공유 비밀키는 별도 채널로 전달해야 합니다. 수신자만 복호화할 수 있습니다.',
+          composeHeading: '암호 생성',
+          recipientLabel: '수신자 이메일',
+          recipientPlaceholder: 'recipient@example.com',
+          secretLabel: '공유 비밀키',
+          secretPlaceholder: '공유 비밀키 입력',
+          expiryLabel: '만료 시간',
+          expiry10m: '10분',
+          expiry1h: '1시간',
+          expiry24h: '24시간',
+          expiry7d: '7일',
+          expiryCustom: '직접 입력(분)',
+          expiryPermanent: '영구 보존',
+          customMinutesSuffix: '분',
+          messageLengthLabel: '메시지 길이',
+          messageLabel: '메시지',
+          messagePlaceholder: '메시지를 입력하세요. 글자 수가 2000자까지 제한됩니다.',
+          tip: '팁: 비밀키는 다른 채널로 공유하세요.',
+          imageLabel: '파일 첨부',
+          imageHint: '',
+          imageClear: '파일 제거',
+          encryptBtn: '암호 생성',
+          resultHeading: '암호화된 페이로드 준비 완료',
+          resultSub: '',
+          copyPayload: '페이로드 복사',
+          copySuccess: '복사됨',
+          openMailto: '이메일 클라이언트 열기',
+          subjectSuggestion: '',
+          decryptHeading: '암호 해독',
+          encryptedLabel: '암호화 블록 붙여넣기',
+          encryptedPlaceholder: '-----BEGIN PRI-BIT----- ... -----END PRI-BIT-----',
+          decryptSecretLabel: '공유 비밀키',
+          decryptSecretPlaceholder: '공유 비밀키 입력',
+          decryptBtn: '암호 해독',
+          footer1: '',
+          footer2: '본 프로그램을 악용할 경우 모든 책임은 사용자에게 있습니다.',
+          footer3: '본 사이트 사용 시 서비스 정책을 충분히 이해하고 준수하는 데 동의합니다.',
+          footer4: '우측 상단 메뉴의 서비스 정책을 확인하세요.',
+          alertsMissingFields: '비밀키를 입력하세요.',
+          alertTooLong: '메시지가 2000자를 초과했습니다.',
+          alertNoContent: '메시지나 파일을 하나 이상 입력하세요.',
+          alertImageTooLarge: '파일 크기가 10MB를 초과했습니다.',
+          alertCap: '월 발송 한도에 도달했습니다.',
+          alertEncryptFail: '암호화에 실패했습니다. 다시 시도하세요.',
+          alertClipboard: '클립보드 접근이 거부되었습니다. 직접 복사하세요.',
+          alertDecryptMissing: '암호화 블록과 비밀키를 모두 입력하세요.',
+          paymentRequiredBanner: (amount) => ``,
+          paymentRequesting: (amount) => `${amount} USDC 결제 요청 중...`,
+          paymentConfirming: '결제 확인 대기 중...',
+          paymentSuccess: '결제가 확인되었습니다. 계속 사용할 수 있습니다.',
+          paymentFailed: '결제가 실패했거나 거부되었습니다.',
+          walletNeedInstall: 'Web3 지갑이 필요합니다.',
+          connectWalletBtn: '지갑 연결',
+          walletStatusIdle: '지갑이 연결되지 않았습니다.',
+          walletStatusConnected: '연결됨',
+          walletStatusSwitching: 'Polygon 메인넷으로 전환 중...',
+          walletStatusError: '지갑 연결 실패.',
+          statusValidUntil: (exp) => `유효 시한: ${exp}`,
+          statusPermanent: '유효: 영구 보존',
+          statusExpired: '만료된 메시지입니다. 자동 삭제되었습니다.',
+          statusDecryptFail: '복호화에 실패했습니다. 비밀키 또는 블록을 확인하세요.',
+          mailBodyHeader: 'Pri-Bit에서 생성한 암호화 메시지입니다.',
+          mailBodyStep1: '읽는 방법:',
+          mailBodyStep2: '1) Pri-Bit 을 엽니다.',
+          mailBodyStep3: '2) 아래 블록을 "Decrypt & View" 영역에 붙여넣습니다.',
+          mailBodyStep4: '3) 공유 비밀키를 입력합니다.',
+          subjectLine: '[Pri-Bit 암호화 메일 시스템]',
+          expiryDisplayPermanent: 'Permanent',
+          expiredCleared: '[만료됨 — 내용이 삭제되었습니다]',
+          noTextContent: '[텍스트 내용 없음]',
+          attachmentHeading: '',
+          downloadImage: '파일 다운로드',
+          sentCountLabel: (count) => `지금까지 발송: ${count}`,
+          sendWarning: '',
+          
+        }
+      };
+
+      const t = (key, ...args) => {
+        const langDict = translations[currentLang] || translations.en;
+        const val = (langDict && Object.prototype.hasOwnProperty.call(langDict, key) ? langDict[key] : translations.en[key]);
+        if (typeof val === 'function') return val(...args);
+        return val ?? key;
+      };
+
+      const applyTranslations = () => {
+        document.documentElement.lang = currentLang;
+        document.querySelectorAll('[data-i18n]').forEach((node) => {
+          const key = node.dataset.i18n;
+          const val = t(key);
+          if (typeof val === 'string') node.textContent = val;
+        });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach((node) => {
+          const key = node.dataset.i18nPlaceholder;
+          const val = t(key);
+          if (typeof val === 'string') node.setAttribute('placeholder', val);
+        });
+        document.querySelectorAll('[data-i18n-label]').forEach((node) => {
+          const key = node.dataset.i18nLabel;
+          const val = t(key);
+          if (typeof val === 'string') node.setAttribute('aria-label', val);
+        });
+        updateWalletButton();
+        updateLimitDisplay();
+        menuToggle.setAttribute('aria-label', t('menuToggleLabel'));
+        if (termsAcceptBtn) termsAcceptBtn.textContent = t('termsAcceptBtn');
+      };
+
+      const setLanguage = (lang) => {
+        currentLang = translations[lang] ? lang : 'en';
+        try {
+          localStorage.setItem(LANG_KEY, currentLang);
+        } catch {
+          // ignore storage failures
+        }
+        const select = $('language-select');
+        if (select) select.value = currentLang;
+        applyTranslations();
+      };
+
+      const initLanguage = () => {
+        try {
+          const saved = localStorage.getItem(LANG_KEY);
+          if (saved && translations[saved]) currentLang = saved;
+        } catch {
+          currentLang = 'en';
+        }
+        setLanguage(currentLang);
+      };
+
+      function getUsage() {
+        const key = usageKey();
+        try {
+          const raw = localStorage.getItem(key);
+          const parsed = raw ? JSON.parse(raw) : { count: 0 };
+          if (Number.isFinite(parsed.count)) return parsed.count;
+          return 0;
+        } catch {
+          return 0;
+        }
+      }
+
+      function incrementUsage() {
+        const key = usageKey();
+        const current = getUsage();
+        const next = current + 1;
+        localStorage.setItem(key, JSON.stringify({ count: next, updated: Date.now() }));
+        updateLimitDisplay();
+      }
+
+      function updateLimitDisplay() {
+        const usageCount = $('usage-count');
+        if (usageCount) usageCount.textContent = t('sentCountLabel', getUsage());
+        const warning = shouldRequirePayment(getUsage() + 1)
+          ? t('paymentRequiredBanner', PAY_AMOUNT_USDC)
+          : t('sendWarning');
+        setSendWarning(warning);
+      }
+
+      function setSendWarning(text, isError = false) {
+        const node = $('send-warning');
+        if (!node) return;
+        node.textContent = text || '';
+        node.style.color = isError ? 'var(--error)' : 'var(--muted)';
+      }
+
+      function updateWalletButton() {
+        const btn = $('connect-wallet-btn');
+        if (!btn) return;
+        btn.textContent = walletConnected ? t('walletStatusConnected') : t('connectWalletBtn');
+      }
+
+      function shouldRequirePayment(nextUsage) {
+        if (FORCE_PAID) return true;
+        return nextUsage > PAY_THRESHOLD;
+      }
+
+      async function deriveKey(secret, salt) {
+        const baseKey = await crypto.subtle.importKey(
+          'raw',
+          enc.encode(secret),
+          'PBKDF2',
+          false,
+          ['deriveKey']
+        );
+        return crypto.subtle.deriveKey(
+          {
+            name: 'PBKDF2',
+            salt,
+            iterations: 120000,
+            hash: 'SHA-256',
+          },
+          baseKey,
+          { name: 'AES-GCM', length: 256 },
+          false,
+          ['encrypt', 'decrypt']
+        );
+      }
+
+      function parseExpiry(selection, customMinutes) {
+        if (selection === 'permanent') return null;
+        const now = Date.now();
+        const map = { '10m': 10, '1h': 60, '24h': 1440, '7d': 10080 };
+        let mins = map[selection] ?? map['1h'];
+        if (selection === 'custom' && customMinutes) {
+          mins = Math.min(Math.max(1, customMinutes), 10080);
+        }
+        return now + mins * 60 * 1000;
+      }
+
+      async function encryptPayload(secret, message, expiresAt, attachment = null) {
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const key = await deriveKey(secret, salt);
+        const envelope = {
+          v: 1,
+          created: Date.now(),
+          exp: expiresAt,
+          body: message || '',
+          attachment: attachment || null,
+        };
+        const cipher = await crypto.subtle.encrypt(
+          { name: 'AES-GCM', iv },
+          key,
+          enc.encode(JSON.stringify(envelope))
+        );
+        return {
+          salt: toB64(salt),
+          iv: toB64(iv),
+          data: toB64(cipher),
+          exp: expiresAt,
+        };
+      }
+
+      async function decryptPayload(secret, blockText) {
+        const parts = {};
+        blockText.split('\n').forEach((line) => {
+          const [k, ...rest] = line.split(':');
+          if (rest.length) {
+            parts[k.trim().toLowerCase()] = rest.join(':').trim();
+          }
+        });
+        if (!parts.data || !parts.salt || !parts.iv) throw new Error('Invalid block');
+        const salt = fromB64(parts.salt);
+        const iv = fromB64(parts.iv);
+        const key = await deriveKey(secret, salt);
+        const decrypted = await crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv },
+          key,
+          fromB64(parts.data)
+        );
+        const payload = JSON.parse(dec.decode(decrypted));
+        if (payload.exp && Date.now() > payload.exp) {
+          throw new Error('Expired');
+        }
+        return payload;
+      }
+
+      function buildBlock(encrypted) {
+        const expDate = encrypted.exp ? new Date(encrypted.exp).toUTCString() : t('expiryDisplayPermanent');
+        return [
+          '-----BEGIN PRI-BIT-----',
+          'version:2.0',
+          `exp:${expDate}`,
+          `salt:${encrypted.salt}`,
+          `iv:${encrypted.iv}`,
+          `data:${encrypted.data}`,
+          '-----END PRI-BIT-----'
+        ].join('\n');
+      }
+
+      function showComposerResult(block) {
+        $('encrypted-block').value = block;
+        $('composer-result').hidden = false;
+      }
+
+      $('expiry').addEventListener('change', (e) => {
+        $('custom-expiry-row').style.display = e.target.value === 'custom' ? 'flex' : 'none';
+      });
+
+      $('message').addEventListener('input', (e) => {
+        $('char-count').textContent = e.target.value.length;
+      });
+
+      $('image-input').addEventListener('change', (e) => {
+        const [file] = e.target.files || [];
+        handleFileSelection(file);
+      });
+
+      $('clear-image-btn').addEventListener('click', () => {
+        clearSelectedFile();
+      });
+
+      $('compose-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const secret = $('secret').value;
+        const msg = $('message').value;
+        const customMins = parseInt($('custom-minutes').value, 10);
+        const expiry = parseExpiry($('expiry').value, customMins);
+        const nextUsage = getUsage() + 1;
+        const hasImage = !!selectedFile;
+        const hasMessage = !!msg;
+        let paymentAttempted = false;
+
+        if (!secret) {
+          alert(t('alertsMissingFields'));
+          return;
+        }
+        if (!hasMessage && !hasImage) {
+          alert(t('alertNoContent'));
+          return;
+        }
+        if (hasMessage && msg.length > 2000) {
+          alert(t('alertTooLong'));
+          return;
+        }
+        try {
+          $('encrypt-btn').disabled = true;
+          if (shouldRequirePayment(nextUsage)) {
+            paymentAttempted = true;
+            await requestPayment();
+          }
+          const attachment = selectedFile ? {
+            name: selectedFile.name,
+            type: selectedFile.type,
+            size: selectedFile.size,
+            data: selectedFile.base64,
+          } : null;
+          const encrypted = await encryptPayload(secret, msg, expiry, attachment);
+          const block = buildBlock(encrypted);
+          incrementUsage();
+          showComposerResult(block);
+          clearSelectedFile();
+        } catch (err) {
+          console.error(err);
+          if (paymentAttempted) {
+            alert(t('paymentFailed'));
+          } else {
+            alert(t('alertEncryptFail'));
+          }
+        } finally {
+          $('encrypt-btn').disabled = false;
+        }
+      });
+
+      $('copy-block').addEventListener('click', async () => {
+        const text = $('encrypted-block').value;
+        try {
+          await navigator.clipboard.writeText(text);
+          $('copy-block').textContent = t('copySuccess');
+          setTimeout(() => { $('copy-block').textContent = t('copyPayload'); }, 1200);
+        } catch {
+          alert(t('alertClipboard'));
+        }
+      });
+
+      const connectBtn = $('connect-wallet-btn');
+      if (connectBtn) {
+        connectBtn.addEventListener('click', async () => {
+          connectBtn.disabled = true;
+          try {
+            await connectWallet();
+          } catch (err) {
+            console.error('wallet connect error', err);
+            setSendWarning(t('walletStatusError'), true);
+          } finally {
+            connectBtn.disabled = false;
+          }
+        });
+      }
+
+      $('decrypt-btn').addEventListener('click', async () => {
+        const block = $('encrypted-input').value.trim();
+        const secret = $('decrypt-secret').value;
+        $('decrypt-output').hidden = true;
+        clearExpiryTimer();
+        clearDecryptedAttachment();
+        if (!block || !secret) {
+          alert(t('alertDecryptMissing'));
+          return;
+        }
+        try {
+          const payload = await decryptPayload(secret, block);
+          const expText = payload.exp ? t('statusValidUntil', new Date(payload.exp).toUTCString()) : t('statusPermanent');
+          $('decrypt-status').textContent = expText;
+          $('decrypt-status').className = 'muted success';
+          const bodyText = payload.body ?? '';
+        $('decrypted-message').textContent = bodyText ? bodyText : t('noTextContent');
+          renderDecryptedAttachment(payload.attachment);
+          $('decrypt-output').hidden = false;
+          const expRaw = payload.exp;
+          let expMs = null;
+          if (typeof expRaw === 'number') {
+            expMs = expRaw;
+          } else if (typeof expRaw === 'string') {
+            const asNumber = Number(expRaw);
+            expMs = Number.isFinite(asNumber) ? asNumber : Date.parse(expRaw);
+          }
+          if (expMs && Number.isFinite(expMs)) {
+            startExpiryWatcher(expMs);
+          }
+        } catch (err) {
+          const expired = err && err.message === 'Expired';
+          $('decrypt-status').textContent = expired ? t('statusExpired') : t('statusDecryptFail');
+          $('decrypt-status').className = expired ? 'muted danger' : 'muted danger';
+          $('decrypted-message').textContent = '';
+          $('decrypt-output').hidden = false;
+          clearDecryptedAttachment();
+        }
+      });
+
+      // Initialize
+      initLanguage();
+      if (termsCheckbox && termsAcceptBtn) {
+        termsCheckbox.addEventListener('change', (e) => {
+          termsAcceptBtn.disabled = !e.target.checked;
+        });
+        termsAcceptBtn.addEventListener('click', () => {
+          if (termsCheckbox.checked) acceptTerms();
+        });
+      }
+      if (termsScroll) {
+        termsScroll.addEventListener('scroll', updateTermsCheckboxLock);
+      }
+      openTerms();
+      const langSelect = $('language-select');
+      if (langSelect) {
+        langSelect.addEventListener('change', (e) => setLanguage(e.target.value));
+      }
+      document.addEventListener('visibilitychange', handleExpiry);
+      updateLimitDisplay();
+      loadEnv();
+      initWalletStatus();
+    })();
+  </script>
+</body>
+</html>
+
